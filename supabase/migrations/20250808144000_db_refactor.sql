@@ -192,8 +192,8 @@ begin
     where conname = 'book_progress_status_chk'
       and conrelid = 'public.book_progress'::regclass
   ) then
-    execute $$alter table public.book_progress add constraint book_progress_status_chk
-      check (status in ('not_started','in_progress','redo','completed'))$$;
+    execute 'alter table public.book_progress add constraint book_progress_status_chk
+      check (status in (''not_started'',''in_progress'',''redo'',''completed''))';
   end if;
 end
 $$;
