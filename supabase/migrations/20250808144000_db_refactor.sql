@@ -224,11 +224,11 @@ alter table public.unit_attempts enable row level security;
 alter table public.responses enable row level security;
 
 -- book_progress policies
-create policy if not exists "parents view book_progress" on public.book_progress
+create policy "parents view book_progress" on public.book_progress
   for select using (exists (
     select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
   ));
-create policy if not exists "parents manage book_progress" on public.book_progress
+create policy "parents manage book_progress" on public.book_progress
   for all using (exists (
     select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
   )) with check (exists (
@@ -236,11 +236,11 @@ create policy if not exists "parents manage book_progress" on public.book_progre
   ));
 
 -- unit_attempts policies
-create policy if not exists "parents view attempts" on public.unit_attempts
+create policy "parents view attempts" on public.unit_attempts
   for select using (exists (
     select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
   ));
-create policy if not exists "parents manage attempts" on public.unit_attempts
+create policy "parents manage attempts" on public.unit_attempts
   for all using (exists (
     select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
   )) with check (exists (
@@ -248,13 +248,13 @@ create policy if not exists "parents manage attempts" on public.unit_attempts
   ));
 
 -- responses policies
-create policy if not exists "parents view responses" on public.responses
+create policy "parents view responses" on public.responses
   for select using (exists (
     select 1 from public.unit_attempts ua
     join public.children c on c.id = ua.child_id
     where ua.id = responses.attempt_id and c.parent_id = auth.uid()
   ));
-create policy if not exists "parents manage responses" on public.responses
+create policy "parents manage responses" on public.responses
   for all using (exists (
     select 1 from public.unit_attempts ua
     join public.children c on c.id = ua.child_id
