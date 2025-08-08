@@ -184,6 +184,20 @@ create table if not exists public.book_progress (
   primary key(child_id, book_id)
 );
 
+-- Constrain status to known values (idempotent)
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'book_progress_status_chk'
+      and conrelid = 'public.book_progress'::regclass
+  ) then
+    execute $$alter table public.book_progress add constraint book_progress_status_chk
+      check (status in ('not_started','in_progress','redo','completed'))$$;
+  end if;
+end
+$$;
+
 create table if not exists public.unit_attempts (
   id uuid primary key default gen_random_uuid(),
   child_id uuid not null references public.children(id) on delete cascade,
@@ -217,6 +231,8 @@ create policy if not exists "parents view book_progress" on public.book_progress
 create policy if not exists "parents manage book_progress" on public.book_progress
   for all using (exists (
     select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
+  )) with check (exists (
+    select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
   ));
 
 -- unit_attempts policies
@@ -226,6 +242,8 @@ create policy if not exists "parents view attempts" on public.unit_attempts
   ));
 create policy if not exists "parents manage attempts" on public.unit_attempts
   for all using (exists (
+    select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
+  )) with check (exists (
     select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
   ));
 
@@ -238,6 +256,10 @@ create policy if not exists "parents view responses" on public.responses
   ));
 create policy if not exists "parents manage responses" on public.responses
   for all using (exists (
+    select 1 from public.unit_attempts ua
+    join public.children c on c.id = ua.child_id
+    where ua.id = responses.attempt_id and c.parent_id = auth.uid()
+  )) with check (exists (
     select 1 from public.unit_attempts ua
     join public.children c on c.id = ua.child_id
     where ua.id = responses.attempt_id and c.parent_id = auth.uid()
