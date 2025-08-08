@@ -37,8 +37,18 @@ do $$ begin
 end $$;
 
 alter table public.levels add column if not exists code text;
-alter table public.levels drop constraint if exists levels_code_unique;
-alter table public.levels add constraint levels_code_unique unique (code);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'levels_code_unique'
+      and conrelid = 'public.levels'::regclass
+  ) then
+    execute 'alter table public.levels add constraint levels_code_unique unique (code)';
+  end if;
+end
+$$;
 
 -- Populate level codes if missing
 update public.levels
@@ -78,8 +88,18 @@ do $$ begin
 end $$;
 
 alter table public.skills add column if not exists code text;
-alter table public.skills drop constraint if exists skills_code_unique;
-alter table public.skills add constraint skills_code_unique unique (code);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'skills_code_unique'
+      and conrelid = 'public.skills'::regclass
+  ) then
+    execute 'alter table public.skills add constraint skills_code_unique unique (code)';
+  end if;
+end
+$$;
 
 -- Populate skill codes if missing
 update public.skills
@@ -189,39 +209,36 @@ alter table public.book_progress enable row level security;
 alter table public.unit_attempts enable row level security;
 alter table public.responses enable row level security;
 
-do $$ begin
-  -- book_progress policies
-  execute $$create policy if not exists "parents view book_progress" on public.book_progress
-    for select using (exists (
-      select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
-    ));$$;
-  execute $$create policy if not exists "parents manage book_progress" on public.book_progress
-    for all using (exists (
-      select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
-    ));$$;
+-- book_progress policies
+create policy if not exists "parents view book_progress" on public.book_progress
+  for select using (exists (
+    select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
+  ));
+create policy if not exists "parents manage book_progress" on public.book_progress
+  for all using (exists (
+    select 1 from public.children c where c.id = book_progress.child_id and c.parent_id = auth.uid()
+  ));
 
-  -- unit_attempts policies
-  execute $$create policy if not exists "parents view attempts" on public.unit_attempts
-    for select using (exists (
-      select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
-    ));$$;
-  execute $$create policy if not exists "parents manage attempts" on public.unit_attempts
-    for all using (exists (
-      select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
-    ));$$;
+-- unit_attempts policies
+create policy if not exists "parents view attempts" on public.unit_attempts
+  for select using (exists (
+    select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
+  ));
+create policy if not exists "parents manage attempts" on public.unit_attempts
+  for all using (exists (
+    select 1 from public.children c where c.id = unit_attempts.child_id and c.parent_id = auth.uid()
+  ));
 
-  -- responses policies
-  execute $$create policy if not exists "parents view responses" on public.responses
-    for select using (exists (
-      select 1 from public.unit_attempts ua
-      join public.children c on c.id = ua.child_id
-      where ua.id = responses.attempt_id and c.parent_id = auth.uid()
-    ));$$;
-  execute $$create policy if not exists "parents manage responses" on public.responses
-    for all using (exists (
-      select 1 from public.unit_attempts ua
-      join public.children c on c.id = ua.child_id
-      where ua.id = responses.attempt_id and c.parent_id = auth.uid()
-    ));$$;
-end $$;
-
+-- responses policies
+create policy if not exists "parents view responses" on public.responses
+  for select using (exists (
+    select 1 from public.unit_attempts ua
+    join public.children c on c.id = ua.child_id
+    where ua.id = responses.attempt_id and c.parent_id = auth.uid()
+  ));
+create policy if not exists "parents manage responses" on public.responses
+  for all using (exists (
+    select 1 from public.unit_attempts ua
+    join public.children c on c.id = ua.child_id
+    where ua.id = responses.attempt_id and c.parent_id = auth.uid()
+  ));
