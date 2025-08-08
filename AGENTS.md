@@ -306,3 +306,14 @@ GET /progress/child/:id
   ]
 }
 ```
+
+---
+
+# Branching and PR Workflow
+
+- New branch per feature: Start each feature or docs change on a fresh branch (e.g., `feat/<slug>`, `fix/<slug>`, `docs/<slug>`).
+- Atomic commits: Make small, logically scoped commits with clear messages.
+- Push early and often: Push the branch to `origin` as you progress.
+- One PR per feature: Open a new PR for each feature/bugfix/docs change. Keep PRs small and focused.
+- No direct commits to `main`: Merge via PR only after review/CI checks.
+- PR content: concise description, scope, testing notes, and any migration/endpoint changes.
