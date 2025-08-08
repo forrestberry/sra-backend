@@ -11,8 +11,7 @@ serve(async (req) => {
     const maybeId = parts.length > 3 ? parts[3] : undefined;
 
     if (req.method === 'GET' && !maybeId) {
-      // List children for authenticated parent
-      await requireAuthUserId(supabase);
+      // List children for current auth context (RLS restricts scope). If unauthenticated, returns empty list.
       const { data, error } = await supabase.from('children').select('id,name,current_level_id,created_at');
       if (error) throw error;
       // Map level_code via levels table
@@ -84,4 +83,3 @@ serve(async (req) => {
     return errorJson(e?.message ?? 'Unexpected error');
   }
 });
-
