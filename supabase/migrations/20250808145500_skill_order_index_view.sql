@@ -18,9 +18,9 @@ from public.skills s;
 -- Backfill using centralized mapping without overwriting explicit zeros
 update public.books b
 set title = coalesce(b.title, concat(l.label, ' — ', s.label))
-from public.levels l
-join public.skills s on s.id = b.category_id
-where b.level_id = l.id
+from public.levels l, public.skills s
+where s.id = b.category_id
+  and b.level_id = l.id
   and (b.title is null or b.title = '');
 
 update public.books b
@@ -28,4 +28,3 @@ set order_index = soi.order_index
 from public.skill_order_index soi
 where b.category_id = soi.skill_id
   and b.order_index is null;
-

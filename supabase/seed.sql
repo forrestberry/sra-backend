@@ -51,7 +51,7 @@ on conflict (level_id, category_id) do nothing;
 update public.books b
 set title = coalesce(b.title, concat(l.label, ' — ', s.label)),
     order_index = coalesce(b.order_index, soi.order_index)
-from public.levels l
-join public.skills s on s.id = b.category_id
-join public.skill_order_index soi on soi.skill_id = s.id
-where b.level_id = l.id;
+from public.levels l, public.skills s, public.skill_order_index soi
+where s.id = b.category_id
+  and soi.skill_id = s.id
+  and b.level_id = l.id;

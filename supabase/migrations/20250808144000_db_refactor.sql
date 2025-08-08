@@ -147,10 +147,10 @@ with skill_order as (
 update public.books b
 set title = concat(l.label, ' — ', s.label),
     order_index = so.idx
-from public.levels l
-join public.skills s on s.id = b.category_id
-join skill_order so on so.skill_id = s.id
-where b.level_id = l.id
+from public.levels l, public.skills s, skill_order so
+where s.id = b.category_id
+  and so.skill_id = s.id
+  and b.level_id = l.id
   and (b.title is null or b.title = '')
   and (b.order_index is null or b.order_index = 0);
 
