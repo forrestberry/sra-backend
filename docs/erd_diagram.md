@@ -1,4 +1,4 @@
-mermaid```
+```mermaid
 erDiagram
     Parent ||--o{ ParentStudentLink : links
     Student ||--o{ ParentStudentLink : links
@@ -37,12 +37,14 @@ erDiagram
     }
 
     Level {
-        text level PK
+        uuid id PK
+        text name UK
         int sort_order
     }
 
     Category {
-        text category_name PK
+        uuid id PK
+        text name UK
         int sort_order
     }
 
@@ -60,7 +62,7 @@ erDiagram
         uuid id PK
         uuid book_id FK
         int unit_number
-        json unit_data
+        jsonb unit_data
         timestamptz created_at
         timestamptz updated_at
     }
@@ -69,7 +71,7 @@ erDiagram
         uuid id PK
         uuid unit_id FK
         int question_number
-        json question_data
+        jsonb question_data
         text answer_key
         timestamptz created_at
         timestamptz updated_at

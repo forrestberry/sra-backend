@@ -129,3 +129,28 @@ supabase functions serve
 supabase db push --prod
 supabase functions deploy --prod
 ```
+
+## Database Migrations & Seeds
+
+- Location: migrations live in `supabase/migrations/` and run via `supabase db push`/`supabase db reset`.
+- Naming: use UTC timestamp + short description (e.g., `20250809162325_initial_schema.sql`).
+- Seeds: edit `supabase/seed.sql` for local dev data; it runs on `supabase db reset`.
+- ERD: update `docs/erd_diagram.md` before any schema change so it stays the source of truth.
+
+Common commands:
+```bash
+# Reset local DB (drops, migrates, seeds)
+supabase db reset
+
+# Diff against remote (if linked)
+supabase db diff --linked
+```
+
+## Worktree Workflow (Recommended)
+
+Create a separate git worktree per feature:
+```bash
+# From backend repo
+git worktree add ../backend-feature-initial-schema -b backend-feature-initial-schema
+```
+Commit small, focused changes and keep ERD and migrations in sync.
