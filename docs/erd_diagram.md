@@ -32,7 +32,6 @@ erDiagram
     ParentStudentLink {
         uuid parent_id PK
         uuid student_id PK
-        text role
         timestamptz created_at
     }
 
