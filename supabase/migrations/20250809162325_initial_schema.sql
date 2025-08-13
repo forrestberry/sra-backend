@@ -274,9 +274,9 @@ security definer
 set search_path = ''
 as $$
 declare
-  _role         text := new.raw_app_meta_data->>'role';
-  _parent_id    uuid := nullif(new.raw_app_meta_data->>'parent_id', '')::uuid;
-  _username     text := new.raw_app_meta_data->>'username';
+  _role         text := new.raw_user_meta_data->>'role';
+  _parent_id    uuid := nullif(new.raw_user_meta_data->>'parent_id', '')::uuid;
+  _username     text := new.raw_user_meta_data->>'username';
   _display_name text := coalesce(
     new.raw_user_meta_data->>'display_name',
     nullif(split_part(new.email, '@', 1), ''),
@@ -290,11 +290,11 @@ begin
 
   elsif _role = 'student' then
     if _parent_id is null then
-      raise exception 'student account requires raw_app_meta_data.parent_id';
+      raise exception 'student account requires raw_user_meta_data.parent_id';
     end if;
 
     if _username is null then
-      raise exception 'student account requires raw_app_meta_data.username';
+      raise exception 'student account requires raw_user_meta_data.username';
     end if;
 
     insert into public.student (id, username)
