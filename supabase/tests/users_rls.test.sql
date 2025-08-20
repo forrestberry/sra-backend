@@ -202,7 +202,7 @@ SELECT is(
 SET LOCAL role authenticated;
 set local request.jwt.claims = '{
   "sub":"23D636A5-FC3B-465A-82BC-25BA13D3C608",
-  "app_metadata": {"role":"parent"}
+  "app_metadata": {"role":"student"}
 }';
 
 -- Test: student should see their primary parent link
