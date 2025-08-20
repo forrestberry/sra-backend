@@ -1,4 +1,4 @@
--- Seed static curriculum data: levels, categories, and books
+-- Seed static curriculum data: levels, categories, books
 -- This data is canonical and should not change.
 
 begin;

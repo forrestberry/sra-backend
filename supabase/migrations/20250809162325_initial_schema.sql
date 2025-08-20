@@ -51,7 +51,8 @@ create table if not exists public.unit (
   id uuid primary key default gen_random_uuid(),
   book_id uuid not null references public.book(id) on delete cascade,
   unit_number int not null check (unit_number > 0),
-  unit_data jsonb not null default '{}'::jsonb,
+  unit_text text null,
+  unit_image_url text null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (book_id, unit_number)
@@ -62,7 +63,10 @@ create table if not exists public.question (
   id uuid primary key default gen_random_uuid(),
   unit_id uuid not null references public.unit(id) on delete cascade,
   question_number int not null check (question_number > 0),
-  question_data jsonb not null default '{}'::jsonb,
+  question_context text null,
+  question_context_image_url text null,
+  question_text text null,
+  question_image_url text null,
   answer_key text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -197,6 +201,20 @@ create policy "read questions"
   on public.question for select
   to anon, authenticated
   using (true);
+
+-- admin edit policies
+create policy "admin can crud unit"
+  on public.unit
+  for all
+  to authenticated
+  using (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
+  with check (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
+
+create policy "admin can crud questions"
+  on public.question for all
+  to authenticated
+  using (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
+  with check (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
 
 -- parent policies
 create policy "parent can view self"
@@ -449,3 +467,30 @@ drop trigger if exists parent_student_link_propagate on public.parent_student_li
 create trigger parent_student_link_propagate
 after insert on public.parent_student_link
 for each row execute function public.propagate_parent_student_link_to_linked_parents();
+
+-- When a student is created, create all book progress rows for that student
+create or replace function public.create_student_book_progress()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  _book_ids uuid[];
+begin
+  -- Get all book IDs
+  select array_agg(id) into _book_ids
+  from public.book;
+  -- Insert a row for each book
+  insert into public.student_book_progress (student_id, book_id)
+  select new.id, b.id
+  from unnest(_book_ids) as b(id)
+  on conflict (student_id, book_id) do nothing;
+  return new;
+end;
+$$;
+drop trigger if exists student_book_progress_create on public.student;
+create trigger student_book_progress_create
+after insert on public.student
+for each row execute function public.create_student_book_progress();
+

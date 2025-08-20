@@ -2,24 +2,35 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(8);
+SELECT plan(15);
 
--- Seed parent users
+-- ---------- SEED USERS ----------
+
+-- Seed admin
+INSERT INTO auth.users (id, email, raw_user_meta_data)
+  VALUES (
+    'D6843197-E49F-4B02-B443-3B8AD7101948',
+    'admin@pgtap.test',
+    jsonb_build_object('role', 'admin')
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+-- Seed parents
 INSERT INTO auth.users (id, email, raw_user_meta_data)
 VALUES (
   '25192763-82C8-405D-8B06-D39115B1E7FA',
   'parent1@test.com',
-  jsonb_build_object('role','parent','display_name','first')
+  jsonb_build_object('role','parent','display_name','parent1')
 ),
 (
   '6DE97FE3-0711-4EAD-92A0-83F819CF9FAA',
   'parent2@test.com',
-  jsonb_build_object('role','parent','display_name','second')
+  jsonb_build_object('role','parent','display_name','parent2')
 ),
 (
   '7DE97FE3-0711-4EAD-92A0-83F819CF9FAA',
   'parent3@test.com',
-  jsonb_build_object('role','parent','display_name','third', 'parent_id','6DE97FE3-0711-4EAD-92A0-83F819CF9FAA')
+  jsonb_build_object('role','parent','display_name','parent3', 'parent_id','6DE97FE3-0711-4EAD-92A0-83F819CF9FAA')
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -40,8 +51,53 @@ VALUES (
   'student3@sra.local',
   jsonb_build_object('role','student','username','student3', 'parent_id','6DE97FE3-0711-4EAD-92A0-83F819CF9FAA')
 )
-
 ON CONFLICT (id) DO NOTHING;
+
+-- ---------- TEST ADMIN ACTIONS ----------
+
+-- Set user as admin
+set local role authenticated;
+set local request.jwt.claims = '{
+  "sub":"D6843197-E49F-4B02-B443-3B8AD7101948",
+  "app_metadata": {"role":"admin"}
+}';
+
+-- Test: admin should be able to insert units
+SELECT results_eq(
+  $$
+    INSERT INTO public.unit (book_id, unit_number)
+    VALUES (
+      (SELECT id 
+        FROM public.book 
+        WHERE title = 'Picture - Working Within Words'
+        LIMIT 1),
+      999
+    )
+    RETURNING unit_number
+  $$,
+  ARRAY[999],
+  'retrieved the test unit tied to that existing book'
+);
+
+-- Test: admin should be able to insert questions
+SELECT results_eq(
+  $$
+    INSERT INTO public.question (unit_id, question_number, answer_key)
+    VALUES (
+      (SELECT id
+        FROM public.unit 
+        WHERE unit_number = 999 
+        LIMIT 1),
+      888,
+      'ZZ'
+    )
+    RETURNING question_number
+  $$,
+  ARRAY[888],
+  'retrieved the test question tied to that existing unit'
+);
+
+-- ---------- TEST PARENT ACTIONS ----------
 
 -- Set user as parent 1
 set local role authenticated;
@@ -86,6 +142,15 @@ SELECT results_eq(
   'Parent 2 should see their linked parent and inverse link'
 );
 
+-- Test: Parent should be able to see their student book progress
+SELECT results_eq(
+  'select count(id) from public.student_book_progress where student_id = ''23D636A5-FC3B-465A-82BC-25BA13D3C608''',
+  ARRAY[90::bigint],
+  'Parent 2 should be able to see their student book progress'
+);
+
+-- ---------- TEST STUDENT ACTIONS ----------
+
 -- Set user as student 1
 SET LOCAL role authenticated;
 SET LOCAL request.jwt.claim.sub = 'B827564E-51D2-4BEC-B0C3-A877DD91C304';
@@ -117,18 +182,50 @@ SELECT results_eq(
   'Student 2 should be able to view their own data'
 );
 
--- TODO: Seed some unit and question data in the migration before creating:
--- TODO: in migration, create a trigger that creates all book progess rows for each student when a student is created
-
 -- Test: Student should be able to submit answer
+SELECT results_eq(
+  $$
+    INSERT INTO public.answer (student_id, question_id, response_text, attempt_number)
+    VALUES (
+      '23D636A5-FC3B-465A-82BC-25BA13D3C608',
+      (SELECT id FROM public.question WHERE question_number = 888 LIMIT 1),
+      'ZZZ',
+      777
+    )
+    RETURNING attempt_number
+  $$,
+  ARRAY[777],
+  'Student 2 should be able to submit an answer'
+);
 
 -- Test: Student should be able to view their own answers
-
--- Test: Parent should be able to view their student answers
+SELECT results_eq(
+  'select count(id) from public.answer where student_id = ''23D636A5-FC3B-465A-82BC-25BA13D3C608''',
+  ARRAY[1::bigint],
+  'Student 2 should be able to view their own answers'
+);
 
 -- Test: Student should be able to see book progress
+SELECT results_eq(
+  'select count(id) from public.student_book_progress where student_id = ''23D636A5-FC3B-465A-82BC-25BA13D3C608''',
+  ARRAY[90::bigint],
+  'Student 2 should be able to see their book progress'
+);
 
--- Test: Parent should be able to see their student book progress
+-- ---------- TEST PARENT VIEWING STUDENT DATA ----------
+
+-- Set user as parent 1
+set local role authenticated;
+set local request.jwt.claim.sub = '25192763-82C8-405D-8B06-D39115B1E7FA';
+
+-- Test: Parent should be able to view their student answers
+SELECT results_eq(
+  'select count(id) from public.answer where student_id = ''B827564E-51D2-4BEC-B0C3-A877DD91C304''',
+  ARRAY[0::bigint],
+  'Parent 1 should not see student 1 answers'
+);
+
+
 
 
 SELECT * FROM finish();
