@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(15);
+SELECT plan(17);
 
 -- ---------- SEED USERS ----------
 
@@ -101,7 +101,35 @@ SELECT results_eq(
 
 -- Set user as parent 1
 set local role authenticated;
-set local request.jwt.claim.sub = '25192763-82C8-405D-8B06-D39115B1E7FA';
+set local request.jwt.claims = '{
+  "sub":"25192763-82C8-405D-8B06-D39115B1E7FA",
+  "app_metadata": {"role":"parent"}
+}';
+
+-- Non-admin cannot insert unit
+SELECT throws_ok(
+  $$
+  insert into public.unit (book_id, unit_number)
+    values ((select id from public.book limit 1), 998);
+  $$,
+  '42501' -- insufficient_privilege
+);
+
+-- Non-admin cannot insert question
+SELECT throws_ok(
+  $$
+    INSERT INTO public.question (unit_id, question_number, answer_key)
+    VALUES (
+      (SELECT id
+        FROM public.unit 
+        WHERE unit_number = 999 
+        LIMIT 1),
+      887,
+      'ZZ'
+    )
+  $$,
+  '42501' -- insufficient_privilege
+);
 
 -- Test: parent should only see their own row
 SELECT results_eq(
@@ -126,7 +154,10 @@ SELECT results_eq(
 
 -- Set user as parent 2
 set local role authenticated;
-set local request.jwt.claim.sub = '6DE97FE3-0711-4EAD-92A0-83F819CF9FAA';
+set local request.jwt.claims = '{
+  "sub":"6DE97FE3-0711-4EAD-92A0-83F819CF9FAA",
+  "app_metadata": {"role":"parent"}
+}';
 
 -- Test: parent should see their student
 SELECT results_eq(
@@ -153,7 +184,10 @@ SELECT results_eq(
 
 -- Set user as student 1
 SET LOCAL role authenticated;
-SET LOCAL request.jwt.claim.sub = 'B827564E-51D2-4BEC-B0C3-A877DD91C304';
+set local request.jwt.claims = '{
+  "sub":"B827564E-51D2-4BEC-B0C3-A877DD91C304",
+  "app_metadata": {"role":"parent"}
+}';
 
 -- Test: student should see their parent link
 SELECT is(
@@ -166,7 +200,10 @@ SELECT is(
 
 -- Set user as student 2
 SET LOCAL role authenticated;
-SET LOCAL request.jwt.claim.sub = '23D636A5-FC3B-465A-82BC-25BA13D3C608';
+set local request.jwt.claims = '{
+  "sub":"23D636A5-FC3B-465A-82BC-25BA13D3C608",
+  "app_metadata": {"role":"parent"}
+}';
 
 -- Test: student should see their primary parent link
 select results_eq(
@@ -216,7 +253,10 @@ SELECT results_eq(
 
 -- Set user as parent 1
 set local role authenticated;
-set local request.jwt.claim.sub = '25192763-82C8-405D-8B06-D39115B1E7FA';
+set local request.jwt.claims = '{
+  "sub":"25192763-82C8-405D-8B06-D39115B1E7FA",
+  "app_metadata": {"role":"parent"}
+}';
 
 -- Test: Parent should be able to view their student answers
 SELECT results_eq(
