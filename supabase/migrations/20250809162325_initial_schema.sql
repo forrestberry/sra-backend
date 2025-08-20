@@ -386,7 +386,10 @@ create trigger on_auth_user_created_profiles
 -- Ensure parent links are symmetric
 create or replace function public.ensure_symmetric_parent_link()
 returns trigger
-language plpgsql as $$
+language plpgsql
+security definer
+set search_path = ''
+as $$
 begin
   if not exists (
     select 1
