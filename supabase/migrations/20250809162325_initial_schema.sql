@@ -43,7 +43,8 @@ create table if not exists public.book (
   title text not null,
   units_count int not null default 0,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (level_id, category_id)
 );
 
 -- unit
@@ -105,7 +106,8 @@ create table if not exists public.parent_parent_link(
   parent_id uuid not null references public.parent(id) on delete cascade,
   linked_parent_id uuid not null references public.parent(id) on delete cascade,
   created_at timestamptz not null default now(),
-  primary key (parent_id, linked_parent_id)
+  primary key (parent_id, linked_parent_id),
+  constraint parent_not_self check (parent_id <> linked_parent_id)
 );
 
 -- student progress
@@ -154,13 +156,12 @@ create index if not exists idx_progress_student on public.student_book_progress(
 create index if not exists idx_progress_book on public.student_book_progress(book_id);
 create index if not exists idx_psl_parent on public.parent_student_link(parent_id);
 create index if not exists idx_psl_student on public.parent_student_link(student_id);
-create index if not exists idx_answer_student_question_time
-  on public.answer (student_id, question_id, submitted_at desc);
-create index if not exists idx_answer_student_question_correct
-  on public.answer (student_id, question_id)
-  where is_correct = true;
-create index if not exists idx_student_current_level
-  on public.student (current_level_id);
+create index if not exists idx_answer_student_question_time on public.answer (student_id, question_id, submitted_at desc);
+create index if not exists idx_answer_student_question_correct on public.answer (student_id, question_id) where is_correct = true;
+create index if not exists idx_answer_student_question_attempt on public.answer (student_id, question_id, attempt_number desc);
+create index if not exists idx_student_current_level on public.student (current_level_id);
+create index if not exists idx_ppl_linked_parent on public.parent_parent_link(linked_parent_id);
+create index if not exists idx_sbp_student on public.student_book_progress(student_id);
 
 -- ------------------ rls policies ------------------
 
@@ -380,7 +381,7 @@ drop trigger if exists on_auth_user_created_profiles on auth.users;
 
 create trigger on_auth_user_created_profiles
   after insert on auth.users
-  for each row execute procedure public.handle_new_user_profiles();
+  for each row execute function public.handle_new_user_profiles();
 
 -- Ensure parent links are symmetric
 create or replace function public.ensure_symmetric_parent_link()

@@ -225,8 +225,5 @@ SELECT results_eq(
   'Parent 1 should not see student 1 answers'
 );
 
-
-
-
 SELECT * FROM finish();
 ROLLBACK;
