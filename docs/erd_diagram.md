@@ -61,7 +61,8 @@ erDiagram
         uuid id PK
         uuid book_id FK
         int unit_number
-        jsonb unit_data
+        text unit_text
+        text unit_image_url
         timestamptz created_at
         timestamptz updated_at
     }
@@ -70,7 +71,10 @@ erDiagram
         uuid id PK
         uuid unit_id FK
         int question_number
-        jsonb question_data
+        text question_context
+        text question_context_image_url
+        text question_text
+        text question_image_url
         text answer_key
         timestamptz created_at
         timestamptz updated_at
