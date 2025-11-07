@@ -1,6 +1,7 @@
 ```mermaid
 erDiagram
     Parent ||--o{ ParentStudentLink : links
+    Parent ||--o{ ParentParentLink : links
     Student ||--o{ ParentStudentLink : links
     Level o|--o{ Student : current_level
     Level ||--o{ Book : contains
@@ -30,8 +31,14 @@ erDiagram
     }
 
     ParentStudentLink {
-        uuid parent_id PK
-        uuid student_id PK
+        uuid parent_id PK, FK
+        uuid student_id PK, FK
+        timestamptz created_at
+    }
+
+    ParentParentLink {
+        uuid parent_id PK, FK
+        uuid linked_parent_id PK, FK
         timestamptz created_at
     }
 
@@ -95,7 +102,7 @@ erDiagram
         uuid student_id FK
         uuid book_id FK
         int units_completed
-        text status
+        book_progress_status status
         timestamptz created_at
         timestamptz updated_at
     }
