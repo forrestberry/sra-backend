@@ -22,7 +22,7 @@
 
 ## 4. Math Facts Trainer Implementation
 1. **Schema & ERD updates**: add `facts`, `fact_units`, `fact_unit_members`, `student_fact_assignments`, `math_sessions`, `math_session_facts`, `math_attempts`, and `student_fact_mastery` tables plus supporting indexes; refresh both `docs/erd_diagram.md` (core) and `docs/erd_math_facts.md` (math facts) and generate migrations; include columns to track session wasted time and answers-per-10s validation.
-2. **Fact library seeding**: create scripts to generate canonical addition/subtraction/multiplication/division facts with metadata, and populate baseline units (e.g., sums ≤ 10, 2× table > 10) plus dynamic filters.
+2. **Fact library seeding**: ✅ base arithmetic facts (0–15 operands) are seeded via `20250915123000_math_facts_seed_data.sql`; next up is defining baseline fact units/collections (e.g., sums ≤ 10, 2× table > 10, "missed twice in 7 days") and scripting their membership so session builders have usable presets.
 3. **Session bundle API**: implement `POST /math-facts/sessions` RPC/Edge Function that validates requested units, resolves fact queues, stores session configs, and returns the full payload needed for offline execution.
 4. **Result ingestion API**: implement `POST /math-facts/sessions/{id}/results` to accept batched attempts, validate timing/order ownership, enforce the "≥1 answer per 10 seconds" requirement, log wasted time for discarded runs, persist attempt rows, and compute session summaries.
 5. **Mastery + recommendations**: build triggers or background workers to update `student_fact_mastery`, enforce the 95% accuracy & <2s latency mastery rule, derive “missed twice in 7 days” collections, and surface recommended next units/facts for each student.
