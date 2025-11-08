@@ -1,3 +1,5 @@
+> Core ERD for books/curriculum data. See `docs/erd_math_facts.md` for the math facts subsystem.
+
 ```mermaid
 erDiagram
     Parent ||--o{ ParentStudentLink : links

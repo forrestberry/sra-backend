@@ -7,7 +7,7 @@ This guide outlines the development workflow, documentation requirements, and co
 -- See [README.md](./README.md) for full project background and functional details.
 - **Platform:** [Supabase](https://supabase.com) (Postgres-based backend with auth, database, and edge functions)
 - **Database:** PostgreSQL
-    - The **Entity Relationship Diagram (ERD)** is located in [`/docs`](./docs/erd_diagram.md) — it **must** be updated before any schema changes are made.
+    - The **Entity Relationship Diagrams (ERDs)** live in [`docs/erd_diagram.md`](./docs/erd_diagram.md) for the core curriculum data and [`docs/erd_math_facts.md`](./docs/erd_math_facts.md) for the math facts subsystem — keep both updated with any schema change.
 - **Auth:** Supabase Auth (JWT-based)
 - **API:** Supabase-generated APIs + custom edge functions
 

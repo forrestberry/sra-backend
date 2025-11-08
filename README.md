@@ -135,7 +135,7 @@ supabase functions deploy --prod
 - Location: migrations live in `supabase/migrations/` and run via `supabase db push`/`supabase db reset`.
 - Naming: use UTC timestamp + short description (e.g., `20250809162325_initial_schema.sql`).
 - Seeds: edit `supabase/seed.sql` for local dev data; it runs on `supabase db reset`.
-- ERD: update `docs/erd_diagram.md` before any schema change so it stays the source of truth.
+- ERDs: update `docs/erd_diagram.md` (core curriculum) and `docs/erd_math_facts.md` (math facts subsystem) before any schema change so they stay the source of truth.
 
 Common commands:
 ```bash
