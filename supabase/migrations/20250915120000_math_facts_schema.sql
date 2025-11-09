@@ -108,6 +108,7 @@ create table if not exists public.math_attempt (
   flashed_answer boolean not null default false,
   attempted_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   constraint math_attempt_session_sequence_unique unique (session_id, session_fact_sequence),
   constraint math_attempt_session_sequence_fk foreign key (session_id, session_fact_sequence)
     references public.math_session_fact(session_id, sequence) on delete cascade
@@ -152,27 +153,27 @@ alter table public.math_attempt enable row level security;
 alter table public.student_math_fact_mastery enable row level security;
 
 -- fact catalog readable by everyone, mutable by admins
-create policy if not exists "read math facts" on public.math_fact for select to anon, authenticated using (true);
-create policy if not exists "admin manage math facts"
+create policy "read math facts" on public.math_fact for select to anon, authenticated using (true);
+create policy "admin manage math facts"
   on public.math_fact for all to authenticated
   using (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
   with check (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
 
-create policy if not exists "read math fact units" on public.math_fact_unit for select to anon, authenticated using (true);
-create policy if not exists "admin manage math fact units"
+create policy "read math fact units" on public.math_fact_unit for select to anon, authenticated using (true);
+create policy "admin manage math fact units"
   on public.math_fact_unit for all to authenticated
   using (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
   with check (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
 
-create policy if not exists "read math fact unit members"
+create policy "read math fact unit members"
   on public.math_fact_unit_member for select to anon, authenticated using (true);
-create policy if not exists "admin manage math fact unit members"
+create policy "admin manage math fact unit members"
   on public.math_fact_unit_member for all to authenticated
   using (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
   with check (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
 
 -- student-facing policies
-create policy if not exists "select math assignments"
+create policy "select math assignments"
   on public.student_math_fact_assignment
   for select using (
     student_id = (select auth.uid())
@@ -183,7 +184,7 @@ create policy if not exists "select math assignments"
     )
   );
 
-create policy if not exists "insert math assignments admin"
+create policy "insert math assignments admin"
   on public.student_math_fact_assignment
   for insert to authenticated
   with check (
@@ -191,7 +192,7 @@ create policy if not exists "insert math assignments admin"
     or assigned_by = (select auth.uid())
   );
 
-create policy if not exists "select own math sessions"
+create policy "select own math sessions"
   on public.math_session
   for select using (
     student_id = (select auth.uid())
@@ -202,16 +203,16 @@ create policy if not exists "select own math sessions"
     )
   );
 
-create policy if not exists "insert own math sessions"
+create policy "insert own math sessions"
   on public.math_session
   for insert with check (student_id = (select auth.uid()));
 
-create policy if not exists "update own math sessions"
+create policy "update own math sessions"
   on public.math_session
   for update using (student_id = (select auth.uid()))
   with check (student_id = (select auth.uid()));
 
-create policy if not exists "select session facts"
+create policy "select session facts"
   on public.math_session_fact
   for select using (
     exists (
@@ -228,7 +229,7 @@ create policy if not exists "select session facts"
     )
   );
 
-create policy if not exists "insert session facts"
+create policy "insert session facts"
   on public.math_session_fact
   for insert with check (
     exists (
@@ -238,11 +239,11 @@ create policy if not exists "insert session facts"
     )
   );
 
-create policy if not exists "student insert math attempts"
+create policy "student insert math attempts"
   on public.math_attempt for insert
   with check (student_id = (select auth.uid()));
 
-create policy if not exists "view math attempts"
+create policy "view math attempts"
   on public.math_attempt for select
   using (
     student_id = (select auth.uid())
@@ -253,7 +254,7 @@ create policy if not exists "view math attempts"
     )
   );
 
-create policy if not exists "view math mastery"
+create policy "view math mastery"
   on public.student_math_fact_mastery for select
   using (
     student_id = (select auth.uid())

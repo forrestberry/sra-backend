@@ -112,6 +112,27 @@ Read-only tables are open to `anon` and `authenticated`:
 ### 9. Track Current Level
 - `student.current_level_id` can be read via `GET /rest/v1/student` and updated by privileged flows (no student update policy exists yet, so any promotion must run via service role).
 
+### 10. Math Facts Trainer Sessions (RPC)
+- **Create session payload**: use Supabase RPC `create_math_fact_session` (documented in `docs/api/math_facts_sessions.md`) to request an offline bundle. Example:
+```ts
+const { data, error } = await supabase.rpc('create_math_fact_session', {
+  mode: 'timed_test',
+  requested_duration_seconds: 180,
+  unit_requests: [
+    { unit_id: additionUnitId, count: 60 }
+  ]
+});
+```
+- **Submit results**: call `submit_math_fact_session_results` with `session_id`, `elapsed_ms`, and the attempt array captured during the run.
+```ts
+await supabase.rpc('submit_math_fact_session_results', {
+  session_id: data.session_id,
+  elapsed_ms: elapsed,
+  attempts
+});
+```
+- See `docs/api/math_facts_sessions.md` for complete payload details, validation rules (e.g., ≥1 answer/10s), and helper semantics.
+
 ---
 
 ## Verification Notes

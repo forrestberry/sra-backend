@@ -32,9 +32,9 @@ begin
       select 1 from public.math_fact_unit_member where fact_unit_id = _unit_id
     ) then
       return query
-        select fact_id
-        from public.math_fact_unit_member
-        where fact_unit_id = _unit_id;
+        select mfum.fact_id
+        from public.math_fact_unit_member mfum
+        where mfum.fact_unit_id = _unit_id;
     end if;
   end if;
 
@@ -49,12 +49,12 @@ begin
     _min_misses := greatest(coalesce((_unit.rule_config->>'min_misses')::int, 2), 1);
 
     return query
-      select fact_id
-      from public.math_attempt
-      where student_id = _student_id
-        and is_correct = false
-        and attempted_at >= now() - (_lookback_days::text || ' days')::interval
-      group by fact_id
+      select ma.fact_id
+      from public.math_attempt ma
+      where ma.student_id = _student_id
+        and ma.is_correct = false
+        and ma.attempted_at >= now() - (_lookback_days::text || ' days')::interval
+      group by ma.fact_id
       having count(*) >= _min_misses;
 
   elsif _type = 'static_filter' then
@@ -64,15 +64,15 @@ begin
     _focus_operand := (_unit.rule_config->>'focus_operand')::int;
 
     return query
-      select id
-      from public.math_fact
-      where (_operation is null or operation = (_operation)::public.math_fact_operation)
-        and (_max_sum is null or operand_a + operand_b <= _max_sum)
-        and (_min_product is null or operand_a * operand_b >= _min_product)
+      select mf.id
+      from public.math_fact mf
+      where (_operation is null or mf.operation = (_operation)::public.math_fact_operation)
+        and (_max_sum is null or mf.operand_a + mf.operand_b <= _max_sum)
+        and (_min_product is null or mf.operand_a * mf.operand_b >= _min_product)
         and (
           _focus_operand is null
-          or operand_a = _focus_operand
-          or operand_b = _focus_operand
+          or mf.operand_a = _focus_operand
+          or mf.operand_b = _focus_operand
         );
   end if;
 end;

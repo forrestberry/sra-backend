@@ -62,6 +62,22 @@ Base path for RPC calls (local): `http://localhost:54321/rest/v1/rpc/<function_n
   - The frontend must cache this payload locally; no further server calls are needed until the session completes.
   - The ordered fact list is also persisted in `math_session_fact` to validate submissions later.
 
+### Supabase JS Example
+```ts
+const { data, error } = await supabase.rpc('create_math_fact_session', {
+  mode: 'timed_test',
+  requested_duration_seconds: 180,
+  unit_requests: [
+    { unit_id: additionUnitId, count: 50 },
+    { unit_id: recentMissesUnitId, count: 20 }
+  ],
+  config: { flash_timeout_ms: 5000 }
+});
+
+if (error) throw error;
+const session = data; // cache `session.facts` locally for offline use
+```
+
 ## 2. `submit_math_fact_session_results`
 - **Method:** `POST /rest/v1/rpc/submit_math_fact_session_results`
 - **Body:**
@@ -115,6 +131,29 @@ Base path for RPC calls (local): `http://localhost:54321/rest/v1/rpc/<function_n
 - **Client expectations:**
   - Resend the full payload on reconnection; the RPC is idempotent per `session_fact_sequence`.
   - The frontend is responsible for enforcing per-question 5s timers and flashing behavior; only summary stats and correctness flow back to the backend.
+
+### Supabase JS Example
+```ts
+const attempts = localFacts.map((fact, idx) => ({
+  sequence: fact.sequence,
+  fact_id: fact.fact_id,
+  response_text: answers[idx].value,
+  is_correct: answers[idx].isCorrect,
+  response_ms: answers[idx].elapsed,
+  hint_used: answers[idx].hintUsed,
+  flashed_answer: answers[idx].flashed,
+  attempted_at: answers[idx].timestamp
+}));
+
+const { data, error } = await supabase.rpc('submit_math_fact_session_results', {
+  session_id: session.session_id,
+  elapsed_ms: totalElapsedMs,
+  attempts
+});
+
+if (error) throw error;
+const summary = data; // contains status, wasted_ms, etc.
+```
 
 ---
 
