@@ -133,6 +133,25 @@ await supabase.rpc('submit_math_fact_session_results', {
 ```
 - See `docs/api/math_facts_sessions.md` for complete payload details, validation rules (e.g., ≥1 answer/10s), and helper semantics.
 
+### 11. Math Facts Reporting (RPC)
+- **Mastery heatmaps**: call `get_student_math_fact_mastery` to fetch per-fact status, accuracy, and latency. Parents/admins pass `student_id`; students omit it to fetch themselves.
+```ts
+const { data } = await supabase.rpc('get_student_math_fact_mastery', {
+  student_id: childId,
+  unit_id: playlistUnitId,
+  limit: 200
+});
+```
+- **Recent misses**: call `get_student_math_fact_recent_misses` with optional `lookback_days`/`min_misses` to power "focus on mistakes" playlists.
+```ts
+const { data } = await supabase.rpc('get_student_math_fact_recent_misses', {
+  student_id: childId,
+  lookback_days: 7,
+  min_misses: 2
+});
+```
+- Details for each RPC live in `docs/api/math_facts_reporting.md`.
+
 ---
 
 ## Verification Notes

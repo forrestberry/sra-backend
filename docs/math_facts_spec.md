@@ -47,15 +47,15 @@
 ### 4.2 APIs (Supabase RPC + future Edge Functions)
 - `rpc/create_math_fact_session` (**implemented**): payload `{ mode, requested_duration_seconds, unit_requests: [{ unit_id, count }], config? }`. Returns `{ session_id, mode, requested_duration_seconds, min_answers_required, facts: [{ sequence, fact_id, unit_id, operation, operand_a, operand_b, result_value }] }`. Enforces the ≥1 answer/10s rule up front and stores the issued fact order in `math_session_fact`.
 - `rpc/submit_math_fact_session_results` (**implemented**): payload `{ session_id, attempts: [{ sequence, fact_id, response_text, is_correct, response_ms, hint_used, flashed_answer, attempted_at? }], elapsed_ms }`. Validates that every attempt belongs to the issued session, upserts attempts, updates mastery, and enforces the "min answers" requirement—sessions that fall short flip to `discarded` with `wasted_ms` recorded.
+- `rpc/get_student_math_fact_mastery` (**implemented**): returns fact-level mastery for a student (status, rolling accuracy/latency, streaks). Supports optional `unit_id`, pagination, and parent/admin overrides via `student_id`.
+- `rpc/get_student_math_fact_recent_misses` (**implemented**): returns trouble facts missed ≥N times in a rolling window. Parameters (`student_id`, `lookback_days`, `min_misses`) let the frontend build "focus mistakes" playlists.
 - CRUD endpoints for `fact_units` and playlists (admin-only) to create curated mixes and constraint-based units (future Edge Functions will back these operations, using the resolver below).
-- `GET /students/{id}/math-facts/mastery`: aggregated mastery plus recommended next units/facts (requires future read endpoints).
-- `GET /math-facts/reports/missed`: parameterized query for "facts missed ≥N times in last X days", to support playlist builders.
 
 ### 4.3 Business Logic
 - **Fact Selection Engine**: implemented via `resolve_math_fact_unit(unit_id, student_id)` plus `create_math_fact_session`, which interprets `rule_config` for dynamic/static filters, resolves fact queues, deduplicates per unit, and stores the ordered sequence.
 - **Timer/Integrity Enforcement**: `submit_math_fact_session_results` compares attempts to the issued queue, enforces the "≥1 answer per 10 seconds" rule, marks underperforming sessions as discarded, and records `wasted_ms` for auditing.
 - **Mastery Updater**: `update_math_fact_mastery` maintains rolling accuracy, latency, streaks, and `status` (`training` → `mastered` → `needs_review`) per fact/student whenever attempts are ingested.
-- **Recommendation Service**: (next) surfaces next-best facts/units by analyzing gaps (e.g., only `7×9` missing in the 7s table) using mastery data + recent attempts.
+- **Recommendation Service**: Powered by `get_student_math_fact_mastery` + `get_student_math_fact_recent_misses`; future iterations can layer spaced-repetition rules or coach dashboards on top of these outputs.
 - **Analytics & Alerts**: flag repeated timeouts (answer flashes), aborted sessions, or prolonged accuracy dips (future dashboards can query `math_session` + `math_attempt`).
 
 ### 4.4 Data Retention & Performance
