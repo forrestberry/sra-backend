@@ -23,6 +23,7 @@ RLS definitions live in `supabase/migrations/*_initial_schema.sql` and are enfor
 
 ## 3. Endpoint Catalogs
 - **Parents & Students**: See `docs/api/user_endpoints.md` for detailed request/response information, Supabase client examples, and coverage notes.
+- **Math Facts Trainer**: `docs/api/math_facts_sessions.md` documents the `create_math_fact_session` and `submit_math_fact_session_results` RPCs plus helper semantics.
 - **Admins**: Not yet exposed via dedicated endpoints. Content authors should use Supabase Studio or run SQL directly until we implement the edge functions described in TODO item 2.
 
 When adding new endpoints:
